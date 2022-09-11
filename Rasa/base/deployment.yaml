@@ -1,0 +1,181 @@
+---
+# Source: rasa/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: rasa
+  labels:
+    helm.sh/chart: rasa-1.17.3
+    app.kubernetes.io/name: rasa
+    app.kubernetes.io/instance: rasa
+    app.kubernetes.io/version: "3.2.6"
+    app.kubernetes.io/managed-by: Helm
+
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rasa
+      app.kubernetes.io/instance: rasa
+  template:
+    metadata:
+      annotations:
+        checksum/secret: 2769bf7eecc41116e93a1e8bc54d3979e88b160c79321be35cc04c3a80b45387
+        checksum/config: dfe3d7c18290667b5d807a5db0905a549a9eb52cd437f82aac9bbf22f8972d34
+        checksum/nginx-config: e97b28dd7316f415579d441b2924bd1584885a1d3fb456055b689efbe5bab509
+      labels:
+        app.kubernetes.io/name: rasa
+        app.kubernetes.io/instance: rasa
+    spec:
+      serviceAccountName: "default"
+      securityContext: {}
+      initContainers:
+        - name: train-initial-model
+          image: "docker.io/rasa/rasa:3.2.6"
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c"]
+          env:
+            - name: "TF_CPP_MIN_LOG_LEVEL"
+              value: "2"
+            - name: "HOME"
+              value: "/app"
+            - name: "RASA_TELEMETRY_ENABLED"
+              value: "true"
+          args:
+            - 'if [ -z "$(ls -A /app | grep -v models)" ]; then echo "Can''t find data, creating a new project"; rasa init --no-prompt; else rasa train; fi'
+          volumeMounts:
+            - mountPath: /app/models
+              name: models
+            - mountPath: /app
+              name: app-dir
+      containers:
+        - name: nginx
+          image: nginx:1.20
+          securityContext: {}
+          livenessProbe:
+            failureThreshold: 6
+            httpGet:
+              path: /
+              port: http-nginx
+              scheme: HTTP
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            successThreshold: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            failureThreshold: 6
+            httpGet:
+              path: /
+              port: http-nginx
+              scheme: HTTP
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources: {}
+          ports:
+            - name: http-nginx
+              containerPort: 80
+              protocol: TCP
+          volumeMounts:
+            - mountPath: "/etc/nginx/nginx.conf"
+              subPath: "nginx.conf"
+              name: rasa-nginx-config
+              readOnly: true
+            - mountPath: "/etc/nginx/conf.d/rasa.nginx.conf"
+              subPath: "rasa.nginx.conf"
+              name: rasa-nginx-config
+              readOnly: true
+        - name: rasa-oss
+          args:
+            - run
+            - --enable-api
+            - --port
+            - "5005"
+            - --cors
+            - "*"
+            - --jwt-method
+            - HS256
+            - --jwt-secret
+            - "$(JWT_SECRET)"
+            - --auth-token
+            - "$(RASA_TOKEN)"
+          securityContext: {}
+          image: "docker.io/rasa/rasa:3.2.6"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5005
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 6
+            httpGet:
+              path: /
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            successThreshold: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            failureThreshold: 6
+            httpGet:
+              path: /
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources: {}
+          envFrom:
+            - configMapRef:
+                name: rasa
+            - configMapRef:
+                name: rasa-env
+            - secretRef:
+                name: rasa
+          env: []
+          volumeMounts:
+            - mountPath: /app/models
+              name: models
+            # Mount the temporary directory for the Rasa global configuration
+            - name: "config-dir"
+              mountPath: "/.config"
+            - mountPath: "/app/endpoints.yml"
+              subPath: "endpoints.yml"
+              name: "rasa-configuration"
+              readOnly: true
+            - mountPath: "/app/credentials.yml"
+              subPath: "credentials.yml"
+              name: "rasa-configuration"
+              readOnly: true
+      volumes:
+        - name: models
+          emptyDir: {}
+        - name: app-dir
+          emptyDir: {}
+        - name: config-dir
+          emptyDir: {}
+        - name: "rasa-configuration"
+          configMap:
+            name: rasa-files
+            items:
+              - key: "endpoints"
+                path: "endpoints.yml"
+              - key: "credentials"
+                path: "credentials.yml"
+        - name: "rasa-nginx-config"
+          configMap:
+            name: "rasa-nginx-config"
+            items:
+              - key: "nginx.conf"
+                path: "nginx.conf"
+              - key: "rasa.nginx.conf"
+                path: "rasa.nginx.conf"

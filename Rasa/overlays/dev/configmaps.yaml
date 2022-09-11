@@ -1,0 +1,38 @@
+apiVersion: "v1"
+kind: "ConfigMap"
+
+metadata:
+  name: rasa-env
+
+data:
+  DB_USER: "rasa"
+  DB_HOST: "postgres.internal.dev.pilgrimagesoftware.com"
+  DB_PORT: "5432"
+  DB_DATABASE: "rasa"
+
+---
+# Source: rasa/templates/config-map.yaml
+apiVersion: "v1"
+kind: "ConfigMap"
+
+metadata:
+  name: rasa-files
+  labels:
+    helm.sh/chart: rasa-1.17.3
+    app.kubernetes.io/name: rasa
+    app.kubernetes.io/instance: rasa
+    app.kubernetes.io/version: "3.2.6"
+    app.kubernetes.io/managed-by: Helm
+
+data:
+  credentials: |
+    endpoints: |
+      tracker_store:
+        db: ${DB_DATABASE}
+        dialect: postgresql
+        login_db: ${DB_DATABASE}
+        password: ${DB_PASSWORD}
+        port: ${DB_PORT}
+        type: sql
+        url: ${DB_HOST}
+        username: ${DB_USER}
