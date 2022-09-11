@@ -33,20 +33,19 @@ spec:
         app.kubernetes.io/name: rasa
         app.kubernetes.io/instance: rasa
     spec:
-      serviceAccountName: "default"
+      serviceAccountName: "rasa"
       securityContext: {}
       initContainers:
         - name: train-initial-model
           image: "docker.io/rasa/rasa:3.2.6"
           imagePullPolicy: IfNotPresent
           command: ["/bin/bash", "-c"]
+          envFrom:
+            - configMapRef:
+                name: rasa
           env:
-            - name: "TF_CPP_MIN_LOG_LEVEL"
-              value: "2"
             - name: "HOME"
               value: "/app"
-            - name: "RASA_TELEMETRY_ENABLED"
-              value: "true"
           args:
             - 'if [ -z "$(ls -A /app | grep -v models)" ]; then echo "Can''t find data, creating a new project"; rasa init --no-prompt; else rasa train; fi'
           volumeMounts:
