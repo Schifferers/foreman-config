@@ -133,6 +133,8 @@ spec:
             - configMapRef:
                 name: rasa-env
             - secretRef:
+                name: common
+            - secretRef:
                 name: rasa
           env: []
           volumeMounts:
