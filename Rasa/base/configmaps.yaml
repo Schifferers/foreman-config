@@ -32,7 +32,7 @@ data:
     }
 
     server {
-      listen            80;
+      listen            8080;
 
       keepalive_timeout   30;
       client_max_body_size 800M;
@@ -70,7 +70,6 @@ data:
     events {
         worker_connections 4096;
     }
-
 
     http {
         include       /etc/nginx/mime.types;

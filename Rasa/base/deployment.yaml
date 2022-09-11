@@ -80,7 +80,7 @@ spec:
           resources: {}
           ports:
             - name: http-nginx
-              containerPort: 80
+              containerPort: 8080
               protocol: TCP
           volumeMounts:
             - mountPath: "/etc/nginx/nginx.conf"
