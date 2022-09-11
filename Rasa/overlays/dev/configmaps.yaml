@@ -26,13 +26,13 @@ metadata:
 
 data:
   credentials: |
-    endpoints: |
-      tracker_store:
-        db: ${DB_DATABASE}
-        dialect: postgresql
-        login_db: ${DB_DATABASE}
-        password: ${DB_PASSWORD}
-        port: ${DB_PORT}
-        type: sql
-        url: ${DB_HOST}
-        username: ${DB_USER}
+  endpoints: |
+    tracker_store:
+      db: ${DB_DATABASE}
+      dialect: postgresql
+      login_db: ${DB_DATABASE}
+      password: ${DB_PASSWORD}
+      port: ${DB_PORT}
+      type: sql
+      url: ${DB_HOST}
+      username: ${DB_USER}
