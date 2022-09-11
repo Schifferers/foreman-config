@@ -36,23 +36,17 @@ spec:
       serviceAccountName: "rasa"
       securityContext: {}
       initContainers:
-        - name: train-initial-model
-          image: "docker.io/rasa/rasa:3.2.6"
-          imagePullPolicy: IfNotPresent
-          command: ["/bin/bash", "-c"]
+        - name: download-initial-model
+          image: "alpine"
+          command: ["/bin/sh", "-c"]
+          args:
+            - cd /app/models/ && wget ${MODEL_URL} -O model.tar.gz
           envFrom:
             - configMapRef:
                 name: rasa
-          env:
-            - name: "HOME"
-              value: "/app"
-          args:
-            - 'if [ -z "$(ls -A /app | grep -v models)" ]; then echo "Can''t find data, creating a new project"; rasa init --no-prompt; else rasa train; fi'
           volumeMounts:
             - mountPath: /app/models
               name: models
-            - mountPath: /app
-              name: app-dir
       containers:
         - name: nginx
           image: nginx:1.20

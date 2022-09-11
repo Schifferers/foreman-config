@@ -10,6 +10,7 @@ data:
   RASA_TELEMETRY_ENABLED: "true"
   MPLCONFIGDIR: "/tmp/.matplotlib"
   TF_CPP_MIN_LOG_LEVEL: "2"
+  MODEL_URL: "https://github.com/Schifferers/foreman-nlp/blob/master/minecraft/models/20200514-221727.tar.gz?raw=true"
 
 ---
 # Source: rasa/templates/nginx-config-map.yaml
